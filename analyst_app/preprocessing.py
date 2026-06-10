@@ -68,6 +68,11 @@ def prepare_for_model(
     if standardize:
         numeric_cols = X_train.select_dtypes(include="number").columns
         scaler = StandardScaler()
+        X_train = X_train.copy()
+        X_test = X_test.copy()
+        float_dtypes = {col: "float64" for col in numeric_cols}
+        X_train = X_train.astype(float_dtypes)
+        X_test = X_test.astype(float_dtypes)
         X_train.loc[:, numeric_cols] = scaler.fit_transform(X_train[numeric_cols])
         X_test.loc[:, numeric_cols] = scaler.transform(X_test[numeric_cols])
 
@@ -80,4 +85,3 @@ def prepare_for_model(
         feature_names=X.columns.tolist(),
         processed_frame=processed,
     )
-
