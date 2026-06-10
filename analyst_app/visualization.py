@@ -42,7 +42,29 @@ def make_chart(df: pd.DataFrame, graph_type: str, x: str | None = None, y: str |
 
 def prediction_chart(predictions: pd.DataFrame):
     plot_df = predictions.reset_index(names="データ番号")
-    return px.scatter(plot_df, x="実測値", y="予測値", hover_data=["データ番号"], trendline="ols")
+    fig = px.scatter(plot_df, x="実測値", y="予測値", hover_data=["データ番号"])
+    values = pd.concat([pd.to_numeric(plot_df["実測値"], errors="coerce"), pd.to_numeric(plot_df["予測値"], errors="coerce")]).dropna()
+    if not values.empty:
+        lower = values.min()
+        upper = values.max()
+        fig.add_shape(
+            type="line",
+            x0=lower,
+            y0=lower,
+            x1=upper,
+            y1=upper,
+            line={"color": "#64748b", "dash": "dash"},
+        )
+        fig.add_annotation(
+            x=upper,
+            y=upper,
+            text="実測値=予測値",
+            showarrow=False,
+            xanchor="right",
+            yanchor="bottom",
+            font={"color": "#475569", "size": 12},
+        )
+    return fig
 
 
 def feature_importance_chart(importance: pd.DataFrame):
@@ -52,4 +74,3 @@ def feature_importance_chart(importance: pd.DataFrame):
 
 def confusion_matrix_chart(matrix: pd.DataFrame):
     return px.imshow(matrix, text_auto=True, color_continuous_scale="Blues", labels={"x": "予測値", "y": "実測値", "color": "件数"})
-
