@@ -213,15 +213,34 @@ with tabs[4]:
         st.caption(GRAPH_HELP[graph_type])
         numeric_cols = chart_df.select_dtypes(include="number").columns.tolist()
         all_cols = chart_df.columns.tolist()
-        col1, col2, col3, col4 = st.columns(4)
-        x = col1.selectbox("X軸 / 対象列", all_cols, index=0)
-        y_options = numeric_cols or all_cols
-        y = col2.selectbox("Y軸", y_options, index=0) if graph_type not in ["ヒストグラム", "円グラフ", "相関ヒートマップ"] else None
-        color = col3.selectbox("色分け", ["なし", *all_cols])
-        agg = col4.selectbox("集計方法", ["合計", "平均"])
+        selected_corr_cols = None
+        if graph_type == "相関ヒートマップ":
+            selected_corr_cols = st.multiselect(
+                "相関を確認する変数",
+                numeric_cols,
+                default=numeric_cols,
+                help="相関は数値列同士で計算します。最初は全て選択されているので、見たい列だけ残してください。",
+            )
+            st.caption("カテゴリ列は相関係数を直接計算できないため、この一覧には数値列だけを表示しています。")
+            x = y = color = None
+            agg = "合計"
+        else:
+            col1, col2, col3, col4 = st.columns(4)
+            x = col1.selectbox("X軸 / 対象列", all_cols, index=0)
+            y_options = numeric_cols or all_cols
+            y = col2.selectbox("Y軸", y_options, index=0) if graph_type not in ["ヒストグラム", "円グラフ"] else None
+            color = col3.selectbox("色分け", ["なし", *all_cols])
+            agg = col4.selectbox("集計方法", ["合計", "平均"])
         try:
-            fig = make_chart(chart_df, graph_type, x=x, y=y, color=None if color == "なし" else color, agg=agg)
-            st.plotly_chart(fig, width="stretch")
+            if graph_type == "相関ヒートマップ":
+                if len(selected_corr_cols or []) < 2:
+                    st.warning("相関ヒートマップには2つ以上の数値列を選択してください。")
+                else:
+                    fig = make_chart(chart_df[selected_corr_cols], graph_type)
+                    st.plotly_chart(fig, width="stretch")
+            else:
+                fig = make_chart(chart_df, graph_type, x=x, y=y, color=None if color == "なし" else color, agg=agg)
+                st.plotly_chart(fig, width="stretch")
         except Exception as exc:
             st.error(f"グラフを作成できませんでした。列の組み合わせを変えてください。原因: {exc}")
 
